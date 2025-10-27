@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dijelumg3nww2"
-path="res://.godot/imported/fancy_ui.svg-655bd3bfe2d04b0bd0eef258a172e788.ctex"
+path="res://.godot/imported/fancy_ui.svg-38544afb6d1fd67f4791cb621740ca30.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/fancyui/fancy_ui.svg"
-dest_files=["res://.godot/imported/fancy_ui.svg-655bd3bfe2d04b0bd0eef258a172e788.ctex"]
+source_file="res://addons/fancyui/addons/fancyui/fancy_ui.svg"
+dest_files=["res://.godot/imported/fancy_ui.svg-38544afb6d1fd67f4791cb621740ca30.ctex"]
 
 [params]
 
