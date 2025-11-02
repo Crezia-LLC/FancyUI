@@ -104,6 +104,8 @@ var starting_rotation: float
 var starting_scale: Vector2
 var starting_size: Vector2
 
+var focused: bool = false
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	direct_children = get_children()
@@ -119,23 +121,27 @@ func _ready() -> void:
 	styleboxes[BaseButton.DRAW_PRESSED] = get_theme_stylebox("pressed").duplicate() # Pressed = 1
 	styleboxes[BaseButton.DRAW_HOVER_PRESSED] = get_theme_stylebox("pressed").duplicate() # Hover Pressed = 4
 	styleboxes[BaseButton.DRAW_DISABLED] = get_theme_stylebox("disabled").duplicate() # Disabled = 3
+	styleboxes[5] = get_theme_stylebox("focus").duplicate() # Focus = 5
 	# Save Different Font Colors
 	font_colors[BaseButton.DRAW_NORMAL] = get_theme_color("font_color")
 	font_colors[BaseButton.DRAW_HOVER] = get_theme_color("font_hover_color")
 	font_colors[BaseButton.DRAW_PRESSED] = get_theme_color("font_pressed_color")
 	font_colors[BaseButton.DRAW_HOVER_PRESSED] = get_theme_color("font_hover_pressed_color")
 	font_colors[BaseButton.DRAW_DISABLED] = get_theme_color("font_disabled_color")
+	font_colors[5] = get_theme_color("font_focus_color")
 	# Override styleboxes
 	add_theme_stylebox_override("normal", tween_stylebox)
 	add_theme_stylebox_override("hover", tween_stylebox)
 	add_theme_stylebox_override("pressed", tween_stylebox)
 	add_theme_stylebox_override("disabled", tween_stylebox)
+	add_theme_stylebox_override("focus", tween_stylebox)
 	# Override Font Colors
 	add_theme_color_override("font_color", tween_font_color)
 	add_theme_color_override("font_hover_color", tween_font_color)
 	add_theme_color_override("font_pressed_color", tween_font_color)
 	add_theme_color_override("font_hover_pressed_color", tween_font_color)
 	add_theme_color_override("font_disabled_color", tween_font_color)
+	add_theme_color_override("font_focus_color", tween_font_color)
 
 func on_button_up():
 	if !self.is_disabled():
@@ -153,6 +159,8 @@ func _notification(what: int):
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
+
+
 	if not loaded:
 		starting_position = self.position
 		starting_rotation = self.rotation_degrees
@@ -167,6 +175,10 @@ func _process(_delta: float) -> void:
 			child.visible = false
 		else:
 			child.visible = true
+
+	if focused && !self.has_focus():
+		focused = false
+		current_state = current_state - 1
 
 	if get_draw_mode() != current_state:
 		self.pivot_offset = self.size / 2
@@ -189,129 +201,10 @@ func _process(_delta: float) -> void:
 
 		var target: StyleBoxFlat = styleboxes[current_state] as StyleBoxFlat
 		var font_target: Color = font_colors[current_state] as Color
-		if current_state == BaseButton.DRAW_HOVER: # Hover State
-			if hover_font:
-				font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-				font_state_tween.tween_property(self, "theme_override_colors/font_hover_color", font_target, hover_color_tween_duration)
-			if hover_color:
-				state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-				state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_color", target.border_color, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
-			if hover_scale:
-				tween_scale = create_tween()
-				tween_scale.tween_property(self, "scale", hover_scale_amount, hover_scale_tween_duration)
-			if hover_move:
-				tween_position = create_tween()
-				tween_position.tween_property(self, "position", hover_move_amount, hover_move_tween_duration)
-			if hover_rotate:
-				tween_rotation = create_tween()
-				tween_rotation.tween_property(self, "rotation_degrees", hover_rotate_amount, hover_rotate_tween_duration)
-			if hover_grow:
-				tween_size = create_tween()
-				tween_size.tween_property(self, "size", starting_size + hover_grow_amount, hover_grow_tween_duration)
-		elif current_state == BaseButton.DRAW_PRESSED:
-			if pressed_font:
-				font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-				font_state_tween.tween_property(self, "theme_override_colors/font_pressed_color", font_target, pressed_color_tween_duration)
-			if pressed_color:
-				state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-				state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_color", target.border_color, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, pressed_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
-			if pressed_scale:
-				tween_scale = create_tween()
-				tween_scale.tween_property(self, "scale", pressed_scale_amount, pressed_scale_tween_duration)
-			if pressed_move:
-				tween_position = create_tween()
-				tween_position.tween_property(self, "position", pressed_move_amount, pressed_move_tween_duration)
-			if pressed_rotate:
-				tween_rotation = create_tween()
-				tween_rotation.tween_property(self, "rotation_degrees", pressed_rotate_amount, pressed_rotate_tween_duration)
-			if pressed_grow:
-				tween_size = create_tween()
-				tween_size.tween_property(self, "size", starting_size + pressed_grow_amount, pressed_grow_tween_duration)
-		elif current_state == BaseButton.DRAW_HOVER_PRESSED:
-			if pressed_font and hover_font:
-				font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-				font_state_tween.tween_property(self, "theme_override_colors/font_hover_pressed_color", font_target, hover_color_tween_duration)
-			if pressed_color and hover_color:
-				state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-				state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_color", target.border_color, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
-				state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
-			if hover_scale:
-				tween_scale = create_tween()
-				tween_scale.tween_property(self, "scale", hover_scale_amount, hover_scale_tween_duration)
-			if hover_move:
-				tween_position = create_tween()
-				tween_position.tween_property(self, "position", hover_move_amount, hover_move_tween_duration)
-			if hover_rotate:
-				tween_rotation = create_tween()
-				tween_rotation.tween_property(self, "rotation_degrees", hover_rotate_amount, hover_rotate_tween_duration)
-			if hover_grow:
-				tween_size = create_tween()
-				tween_size.tween_property(self, "size", starting_size + hover_grow_amount, hover_grow_tween_duration)
-		elif current_state == BaseButton.DRAW_DISABLED:
-			font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-			font_state_tween.tween_property(self, "theme_override_colors/font_disabled_color", font_target, hover_color_tween_duration)
-			state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
-			state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "border_color", target.border_color, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
-			state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
-		elif current_state == BaseButton.DRAW_NORMAL:
+		if self.has_focus() && focusable:
+			focused = true
+			target = styleboxes[5] as StyleBoxFlat
+			font_target = font_colors[5] as Color
 			font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
 			font_state_tween.tween_property(self, "theme_override_colors/font_color", font_target, hover_color_tween_duration)
 			state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
@@ -331,17 +224,168 @@ func _process(_delta: float) -> void:
 			state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
 			state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
 			state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
-			tween_scale = create_tween()
-			tween_position = create_tween()
-			tween_rotation = create_tween()
-			tween_size = create_tween()
-			if !hover_animations:
-				tween_scale.tween_property(self, "scale", starting_scale, pressed_scale_tween_duration)
-				tween_position.tween_property(self, "position", starting_position, pressed_move_tween_duration)
-				tween_rotation.tween_property(self, "rotation_degrees", starting_rotation, pressed_rotate_tween_duration)
-				tween_size.tween_property(self, "size", starting_size, pressed_grow_tween_duration)
-			else:
-				tween_scale.tween_property(self, "scale", starting_scale, hover_scale_tween_duration)
-				tween_position.tween_property(self, "position", starting_position, hover_move_tween_duration)
-				tween_rotation.tween_property(self, "rotation_degrees", starting_rotation, hover_rotate_tween_duration)
-				tween_size.tween_property(self, "size", starting_size, hover_grow_tween_duration)
+		else:
+			if current_state == BaseButton.DRAW_HOVER: # Hover State
+				if hover_font:
+					font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+					font_state_tween.tween_property(self, "theme_override_colors/font_hover_color", font_target, hover_color_tween_duration)
+				if hover_color:
+					state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+					state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_color", target.border_color, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
+				if hover_scale:
+					tween_scale = create_tween()
+					tween_scale.tween_property(self, "scale", hover_scale_amount, hover_scale_tween_duration)
+				if hover_move:
+					tween_position = create_tween()
+					tween_position.tween_property(self, "position", hover_move_amount, hover_move_tween_duration)
+				if hover_rotate:
+					tween_rotation = create_tween()
+					tween_rotation.tween_property(self, "rotation_degrees", hover_rotate_amount, hover_rotate_tween_duration)
+				if hover_grow:
+					tween_size = create_tween()
+					tween_size.tween_property(self, "size", starting_size + hover_grow_amount, hover_grow_tween_duration)
+			elif current_state == BaseButton.DRAW_PRESSED:
+				if pressed_font:
+					font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+					font_state_tween.tween_property(self, "theme_override_colors/font_pressed_color", font_target, pressed_color_tween_duration)
+				if pressed_color:
+					state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+					state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_color", target.border_color, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, pressed_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
+				if pressed_scale:
+					tween_scale = create_tween()
+					tween_scale.tween_property(self, "scale", pressed_scale_amount, pressed_scale_tween_duration)
+				if pressed_move:
+					tween_position = create_tween()
+					tween_position.tween_property(self, "position", pressed_move_amount, pressed_move_tween_duration)
+				if pressed_rotate:
+					tween_rotation = create_tween()
+					tween_rotation.tween_property(self, "rotation_degrees", pressed_rotate_amount, pressed_rotate_tween_duration)
+				if pressed_grow:
+					tween_size = create_tween()
+					tween_size.tween_property(self, "size", starting_size + pressed_grow_amount, pressed_grow_tween_duration)
+			elif current_state == BaseButton.DRAW_HOVER_PRESSED:
+				if pressed_font and hover_font:
+					font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+					font_state_tween.tween_property(self, "theme_override_colors/font_hover_pressed_color", font_target, hover_color_tween_duration)
+				if pressed_color and hover_color:
+					state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+					state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_color", target.border_color, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
+					state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
+				if hover_scale:
+					tween_scale = create_tween()
+					tween_scale.tween_property(self, "scale", hover_scale_amount, hover_scale_tween_duration)
+				if hover_move:
+					tween_position = create_tween()
+					tween_position.tween_property(self, "position", hover_move_amount, hover_move_tween_duration)
+				if hover_rotate:
+					tween_rotation = create_tween()
+					tween_rotation.tween_property(self, "rotation_degrees", hover_rotate_amount, hover_rotate_tween_duration)
+				if hover_grow:
+					tween_size = create_tween()
+					tween_size.tween_property(self, "size", starting_size + hover_grow_amount, hover_grow_tween_duration)
+			elif current_state == BaseButton.DRAW_DISABLED:
+				font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+				font_state_tween.tween_property(self, "theme_override_colors/font_disabled_color", font_target, hover_color_tween_duration)
+				state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+				state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_color", target.border_color, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
+			elif current_state == BaseButton.DRAW_NORMAL:
+				font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+				font_state_tween.tween_property(self, "theme_override_colors/font_color", font_target, hover_color_tween_duration)
+				state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
+				state_tween.tween_property(tween_stylebox, "bg_color", target.bg_color, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_color", target.border_color, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_bottom", target.border_width_bottom, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_top", target.border_width_top, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_left", target.border_width_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "border_width_right", target.border_width_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_top_left", target.corner_radius_top_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_top_right", target.corner_radius_top_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_left", target.corner_radius_bottom_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "corner_radius_bottom_right", target.corner_radius_bottom_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_left", target.expand_margin_left, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_right", target.expand_margin_right, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_top", target.expand_margin_top, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "expand_margin_bottom", target.expand_margin_bottom, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
+				state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
+				tween_scale = create_tween()
+				tween_position = create_tween()
+				tween_rotation = create_tween()
+				tween_size = create_tween()
+				if !hover_animations:
+					if pressed_scale:
+						tween_scale.tween_property(self, "scale", starting_scale, pressed_scale_tween_duration)
+					if pressed_move:
+						tween_position.tween_property(self, "position", starting_position, pressed_move_tween_duration)
+					if pressed_rotate:
+						tween_rotation.tween_property(self, "rotation_degrees", starting_rotation, pressed_rotate_tween_duration)
+					if pressed_grow:
+						tween_size.tween_property(self, "size", starting_size, pressed_grow_tween_duration)
+				else:
+					if hover_scale:
+						tween_scale.tween_property(self, "scale", starting_scale, hover_scale_tween_duration)
+					if hover_move:
+						tween_position.tween_property(self, "position", starting_position, hover_move_tween_duration)
+					if hover_rotate:
+						tween_rotation.tween_property(self, "rotation_degrees", starting_rotation, hover_rotate_tween_duration)
+					if hover_grow:
+						tween_size.tween_property(self, "size", starting_size, hover_grow_tween_duration)
