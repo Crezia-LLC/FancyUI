@@ -1,10 +1,9 @@
-@icon("res://images/fancy_ui.svg")
 extends Button
 ## FancyButton is an interactive button with customizable hover and pressed animations.
 class_name FancyButton
 
-
 @export var focusable: bool = true
+@export var lose_focus_on_click: bool = true
 @export var button_id: int = 0
 @export_group("Hover Animations")
 @export var hover_animations: bool = true
@@ -100,6 +99,7 @@ var tween_font_color: Color
 var font_colors: Dictionary = {}
 var state_tween: Tween
 var font_state_tween: Tween
+var check_disabled: bool = false
 
 # Set Up tweens
 var tween_scale: Tween
@@ -119,6 +119,7 @@ var focused: bool = false
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	direct_children = get_children()
+	self.pressed.connect(on_button_pressed)
 	self.button_up.connect(on_button_up)
 	self.mouse_entered.connect(on_button_hover)
 	self.mouse_exited.connect(on_button_unhover)
@@ -155,14 +156,31 @@ func _ready() -> void:
 	add_theme_color_override("font_focus_color", tween_font_color)
 
 	# Tooltip
-	if get_child_count() > 0:
-		fancy_tooltip_node = get_child(0) as FancyTooltip
-		fancy_tooltip_node.tooltip_fade_animation = tooltip_fade_animation
-		fancy_tooltip_node.tooltip_fade_tween_duration = tooltip_fade_tween_duration
-		fancy_tooltip_node.tooltip_pop_animation = tooltip_pop_animation
-		fancy_tooltip_node.tooltip_pop_tween_duration = tooltip_pop_tween_duration
-		fancy_tooltip_node.tooltip_pop_animation_scale_amount = tooltip_pop_animation_scale_amount
-		fancy_tooltip_node.reset()
+	for child in self.get_children():
+		if child is FancyTooltip:
+			fancy_tooltip_node = child as FancyTooltip
+			fancy_tooltip_node.tooltip_fade_animation = tooltip_fade_animation
+			fancy_tooltip_node.tooltip_fade_tween_duration = tooltip_fade_tween_duration
+			fancy_tooltip_node.tooltip_pop_animation = tooltip_pop_animation
+			fancy_tooltip_node.tooltip_pop_tween_duration = tooltip_pop_tween_duration
+			fancy_tooltip_node.tooltip_pop_animation_scale_amount = tooltip_pop_animation_scale_amount
+			fancy_tooltip_node.reset()
+
+
+func on_button_pressed():
+	if !self.is_disabled():
+		if lose_focus_on_click:
+			var timer = get_tree().create_timer(0.1)
+			await timer.timeout
+			self.release_focus()
+			current_state = BaseButton.DRAW_NORMAL
+			var event = InputEventMouseMotion.new()
+			var pos = get_viewport().get_mouse_position()
+			var new_pos = pos + Vector2(0, 0)
+			event.position = pos
+			event.relative = new_pos - pos
+			Input.parse_input_event(event)
+			Input.warp_mouse(new_pos)
 
 func on_button_up():
 	if !self.is_disabled():
@@ -193,13 +211,28 @@ func _process(_delta: float) -> void:
 		starting_rotation = self.rotation_degrees
 		starting_scale = self.scale
 		starting_size = self.size
+		if TranslationServer.get_locale() == "he" || TranslationServer.get_locale() == "ar":
+			pressed_move_amount = Vector2(pressed_move_amount.x * -1, pressed_move_amount.y)
+			hover_move_amount = Vector2(hover_move_amount.x * -1, hover_move_amount.y)
 		loaded = true
 
-	if not focusable:
+	if !check_disabled && self.is_disabled():
+		check_disabled = true
+		if fancy_tooltip_node:
+			fancy_tooltip_node.reset()
+
+	if check_disabled && !self.is_disabled():
+		check_disabled = false
+
+	if not focusable || self.is_disabled():
 		self.focus_mode = FOCUS_NONE
 
 	if focused && !self.has_focus():
 		focused = false
+		current_state = current_state - 1
+
+	if !focused && self.has_focus():
+		focused = true
 		current_state = current_state - 1
 
 	if get_draw_mode() != current_state:
@@ -224,6 +257,9 @@ func _process(_delta: float) -> void:
 		var target: StyleBoxFlat = styleboxes[current_state] as StyleBoxFlat
 		var font_target: Color = font_colors[current_state] as Color
 		if self.has_focus() && focusable:
+			if self.is_disabled():
+				focused = false
+				return
 			focused = true
 			target = styleboxes[5] as StyleBoxFlat
 			font_target = font_colors[5] as Color
@@ -261,8 +297,23 @@ func _process(_delta: float) -> void:
 			state_tween.tween_property(tween_stylebox, "shadow_size", target.shadow_size, hover_color_tween_duration)
 			state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
 			state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
+			if pressed_animations:
+				if pressed_scale:
+					tween_scale = create_tween()
+					tween_scale.tween_property(self, "scale", pressed_scale_amount, pressed_scale_tween_duration)
+				if pressed_move:
+					tween_position = create_tween()
+					tween_position.tween_property(self, "position", starting_position + pressed_move_amount, pressed_move_tween_duration)
+				if pressed_rotate:
+					tween_rotation = create_tween()
+					tween_rotation.tween_property(self, "rotation_degrees", starting_rotation + pressed_rotate_amount, pressed_rotate_tween_duration)
+				if pressed_grow:
+					tween_size = create_tween()
+					tween_size.tween_property(self, "size", starting_size + pressed_grow_amount, pressed_grow_tween_duration)
 		else:
 			if current_state == BaseButton.DRAW_HOVER: # Hover State
+				if self.is_disabled():
+					return
 				if hover_font:
 					font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
 					font_state_tween.tween_property(self, "theme_override_colors/font_hover_color", font_target, hover_color_tween_duration)
@@ -312,6 +363,8 @@ func _process(_delta: float) -> void:
 					tween_size = create_tween()
 					tween_size.tween_property(self, "size", starting_size + hover_grow_amount, hover_grow_tween_duration)
 			elif current_state == BaseButton.DRAW_PRESSED:
+				if self.is_disabled():
+					return
 				if pressed_font:
 					font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
 					font_state_tween.tween_property(self, "theme_override_colors/font_pressed_color", font_target, pressed_color_tween_duration)
@@ -361,6 +414,8 @@ func _process(_delta: float) -> void:
 					tween_size = create_tween()
 					tween_size.tween_property(self, "size", starting_size + pressed_grow_amount, pressed_grow_tween_duration)
 			elif current_state == BaseButton.DRAW_HOVER_PRESSED:
+				if self.is_disabled():
+					return
 				if pressed_font and hover_font:
 					font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
 					font_state_tween.tween_property(self, "theme_override_colors/font_hover_pressed_color", font_target, hover_color_tween_duration)
@@ -445,6 +500,8 @@ func _process(_delta: float) -> void:
 				state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
 				state_tween.tween_property(tween_stylebox, "shadow_offset", target.shadow_offset, hover_color_tween_duration)
 			elif current_state == BaseButton.DRAW_NORMAL:
+				if self.is_disabled():
+					return
 				font_state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()
 				font_state_tween.tween_property(self, "theme_override_colors/font_color", font_target, hover_color_tween_duration)
 				state_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel()

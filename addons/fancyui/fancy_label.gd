@@ -52,14 +52,15 @@ func _ready():
 		self.mouse_exited.connect(_not_hovering)
 		connected = true
 
-	if get_child_count() > 0:
-		fancy_tooltip_node = get_child(0) as FancyTooltip
-		fancy_tooltip_node.tooltip_fade_animation = tooltip_fade_animation
-		fancy_tooltip_node.tooltip_fade_tween_duration = tooltip_fade_tween_duration
-		fancy_tooltip_node.tooltip_pop_animation = tooltip_pop_animation
-		fancy_tooltip_node.tooltip_pop_tween_duration = tooltip_pop_tween_duration
-		fancy_tooltip_node.tooltip_pop_animation_scale_amount = tooltip_pop_animation_scale_amount
-		fancy_tooltip_node.reset()
+	for child in self.get_children():
+		if child is FancyTooltip:
+			fancy_tooltip_node = child as FancyTooltip
+			fancy_tooltip_node.tooltip_fade_animation = tooltip_fade_animation
+			fancy_tooltip_node.tooltip_fade_tween_duration = tooltip_fade_tween_duration
+			fancy_tooltip_node.tooltip_pop_animation = tooltip_pop_animation
+			fancy_tooltip_node.tooltip_pop_tween_duration = tooltip_pop_tween_duration
+			fancy_tooltip_node.tooltip_pop_animation_scale_amount = tooltip_pop_animation_scale_amount
+			fancy_tooltip_node.reset()
 
 func reset(tool_tip_text: String):
 	text_to_display = tool_tip_text
